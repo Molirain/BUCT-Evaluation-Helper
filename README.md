@@ -1,7 +1,7 @@
 # BUCT-Evaluation-Helper
-北京化工大学（BUCT）教评系统一键全自动挂机减负脚本，解放双手
+北京化工大学（BUCT）教评系统一键全自动挂机减负脚本，解放双手  
 
-一键安装请确定自己安装了油猴/篡改猴等
+一键安装请确定自己安装了油猴/篡改猴等  
 [点击一键安装](https://raw.githubusercontent.com/Molirain/BUCT-Evaluation-Helper/main/buct-evaluation-helper.user.js)  
 
 ## 手动安装
