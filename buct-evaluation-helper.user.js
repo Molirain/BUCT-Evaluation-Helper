@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         北化教评一键减负
 // @namespace    https://github.com/Molirain
-// @version      4.7.0
+// @version      4.7.1
 // @description  北京化工大学（BUCT）教评系统一键全自动挂机减负脚本，解放双手，智能识别弹窗与特殊课程模板。
 // @author       Molirain
 // @match        https://buct.mycospxk.com/index.html*
@@ -128,7 +128,8 @@
             const startedAt = Date.now();
             const startUrl = location.href;
             let sawModal = false;
-            let clickedConfirm = false;
+            let clickedSubmitConfirm = false;
+            let clickedResultConfirm = false;
 
             const checkTimer = _setInterval(() => {
                 const activeModals = Array.from(document.querySelectorAll(
@@ -136,20 +137,32 @@
                 )).filter(isVisible);
 
                 if (activeModals.length > 0) sawModal = true;
-                if (sawModal && activeModals.length === 0) {
-                    _clearInterval(checkTimer);
-                    resolve();
-                    return;
-                }
-                if (!sawModal && (location.href !== startUrl || getQuestionGroups().length === 0 ||
-                    getFormSignature() !== startSignature)) {
-                    _clearInterval(checkTimer);
-                    resolve();
-                    return;
+                if (activeModals.length === 0) {
+                    if (clickedResultConfirm || clickedSubmitConfirm) {
+                        const nextCourseBtn = Array.from(document.querySelectorAll('button, .ant-btn, [role="button"]'))
+                            .find(el => isVisible(el) && !el.disabled && cleanStr(el.innerText) === '下一课程');
+                        if (nextCourseBtn) {
+                            console.log('[Tampermonkey] 点击下一课程');
+                            nextCourseBtn.click();
+                            _clearInterval(checkTimer);
+                            resolve();
+                            return;
+                        }
+                        if (location.href !== startUrl || (getQuestionGroups().length > 0 && getFormSignature() !== startSignature)) {
+                            _clearInterval(checkTimer);
+                            resolve();
+                            return;
+                        }
+                    } else if (sawModal || location.href !== startUrl || getQuestionGroups().length === 0 ||
+                        getFormSignature() !== startSignature) {
+                        _clearInterval(checkTimer);
+                        resolve();
+                        return;
+                    }
                 }
                 if (Date.now() - startedAt >= SUBMIT_TIMEOUT) {
                     _clearInterval(checkTimer);
-                    reject(new Error('提交后长时间没有收到页面确认，请检查提交状态后再继续'));
+                    reject(new Error('提交后没有找到“下一课程”按钮或后续问卷，请检查页面状态'));
                     return;
                 }
                 if (activeModals.length === 0) return;
@@ -157,11 +170,10 @@
                 const buttons = Array.from(new Set(activeModals.flatMap(modal =>
                     Array.from(modal.querySelectorAll('button, .ant-btn, [role="button"]'))
                 ))).filter(isVisible);
-                const nextBtn = buttons.find(el => /(下一|继续|下一项|下一门|下一位)/.test(cleanStr(el.innerText)));
+                const nextBtn = buttons.find(el => /(下一步|继续|下一项|下一门|下一位)/.test(cleanStr(el.innerText)));
                 const confirmBtn = buttons.find(el => /(确定|确认|知道了|完成|关闭)/.test(cleanStr(el.innerText)));
                 const submitConfirmBtn = buttons.find(el => /^(确定|确认|提交)$/.test(cleanStr(el.innerText)));
                 const cancelBtn = buttons.find(el => cleanStr(el.innerText).includes('取消'));
-                const successText = activeModals.some(el => cleanStr(el.innerText).includes('提交成功'));
 
                 if (nextBtn && !nextBtn.disabled) {
                     console.log(`[Tampermonkey] 已确认页面进阶: ${nextBtn.innerText.trim()}`);
@@ -170,17 +182,15 @@
                     resolve();
                     return;
                 }
-                if (submitConfirmBtn && cancelBtn && !clickedConfirm && !submitConfirmBtn.disabled) {
+                if (submitConfirmBtn && cancelBtn && !clickedSubmitConfirm && !submitConfirmBtn.disabled) {
                     console.log('[Tampermonkey] 确认提交');
-                    clickedConfirm = true;
+                    clickedSubmitConfirm = true;
                     submitConfirmBtn.click();
                     return;
                 }
-                if (successText && confirmBtn && !cancelBtn && !clickedConfirm && !confirmBtn.disabled) {
-                    console.log('[Tampermonkey] 已检测到提交成功提示');
-                if (confirmBtn && !cancelBtn && !clickedConfirm && !confirmBtn.disabled) {
+                if (confirmBtn && !cancelBtn && !clickedResultConfirm && !confirmBtn.disabled) {
                     console.log('[Tampermonkey] 提交后确认: ' + cleanStr(confirmBtn.innerText));
-                    clickedConfirm = true;
+                    clickedResultConfirm = true;
                     confirmBtn.click();
                 }
             }, POLL_INTERVAL);
