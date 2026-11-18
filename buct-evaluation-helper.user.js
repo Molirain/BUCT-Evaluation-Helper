@@ -178,6 +178,8 @@
                 }
                 if (successText && confirmBtn && !cancelBtn && !clickedConfirm && !confirmBtn.disabled) {
                     console.log('[Tampermonkey] 已检测到提交成功提示');
+                if (confirmBtn && !cancelBtn && !clickedConfirm && !confirmBtn.disabled) {
+                    console.log('[Tampermonkey] 提交后确认: ' + cleanStr(confirmBtn.innerText));
                     clickedConfirm = true;
                     confirmBtn.click();
                 }
